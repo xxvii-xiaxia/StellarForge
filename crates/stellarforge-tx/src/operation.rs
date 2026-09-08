@@ -1,11 +1,11 @@
 //! Transaction operations.
 //!
 //! An initial, focused subset of the Stellar operation set — enough to build a working payment
-//! workflow. Additional operation kinds (e.g. `InvokeHostFunction` for Soroban) are added by
-//! other crates as they're built out.
+//! workflow, including Soroban token (SEP-41) transfers via contract invocation.
 
+use crate::arg::ScArg;
 use crate::error::TxError;
-use stellarforge_core::Asset;
+use stellarforge_core::{AddressKind, Asset};
 
 /// A single operation within a transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,6 +15,15 @@ pub enum Operation {
         destination: String,
         asset: Asset,
         amount: String,
+    },
+    /// Invokes `function` on the Soroban contract at `contract` with `args`.
+    ///
+    /// This is the operation SEP-41 token transfers (and other contract calls) are built on;
+    /// full argument/return XDR encoding is handled by the Soroban module.
+    InvokeContract {
+        contract: String,
+        function: String,
+        args: Vec<ScArg>,
     },
 }
 
@@ -36,6 +45,31 @@ impl Operation {
             destination,
             asset,
             amount,
+        })
+    }
+
+    /// A contract invocation, validating that `contract` is a well-formed Soroban contract
+    /// address.
+    pub fn invoke_contract(
+        contract: impl Into<String>,
+        function: impl Into<String>,
+        args: Vec<ScArg>,
+    ) -> Result<Self, TxError> {
+        let contract = contract.into();
+
+        match stellarforge_core::validate_address(&contract)? {
+            AddressKind::Contract => {}
+            other => {
+                return Err(TxError::Rejected(format!(
+                    "invoke_contract target must be a contract address, got {other:?}"
+                )))
+            }
+        }
+
+        Ok(Operation::InvokeContract {
+            contract,
+            function: function.into(),
+            args,
         })
     }
 }
@@ -117,5 +151,36 @@ mod tests {
     #[test]
     fn payment_with_non_numeric_amount_is_rejected() {
         assert!(Operation::payment(VALID_DESTINATION, Asset::Native, "abc").is_err());
+    }
+
+    const VALID_CONTRACT: &str = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4";
+
+    #[test]
+    fn invoke_contract_with_valid_address_succeeds() {
+        let op = Operation::invoke_contract(
+            VALID_CONTRACT,
+            "transfer",
+            vec![
+                ScArg::Address(VALID_DESTINATION.to_string()),
+                ScArg::I128(25),
+            ],
+        )
+        .unwrap();
+        assert!(matches!(
+            op,
+            Operation::InvokeContract { function, args, .. }
+                if function == "transfer" && args.len() == 2
+        ));
+    }
+
+    #[test]
+    fn invoke_contract_rejects_non_contract_address() {
+        let err = Operation::invoke_contract(VALID_DESTINATION, "transfer", vec![]).unwrap_err();
+        assert!(matches!(err, TxError::Rejected(_)));
+    }
+
+    #[test]
+    fn invoke_contract_rejects_malformed_address() {
+        assert!(Operation::invoke_contract("not-a-contract", "transfer", vec![]).is_err());
     }
 }
