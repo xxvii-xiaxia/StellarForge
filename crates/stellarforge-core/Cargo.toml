@@ -1,0 +1,11 @@
+[package]
+name = "stellarforge-core"
+description = "Shared primitives for StellarForge: network configuration, errors, and address validation."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true

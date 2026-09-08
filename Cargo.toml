@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/stellarforge-core",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/xxvii-xiaxia/StellarForge"
+authors = ["StellarForge Contributors"]
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
