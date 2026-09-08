@@ -6,9 +6,11 @@
 
 pub mod error;
 pub mod memo;
+pub mod time_bounds;
 
 pub use error::TxError;
 pub use memo::Memo;
+pub use time_bounds::TimeBounds;
 
 /// The network minimum base fee, in stroops, per operation.
 pub const MIN_BASE_FEE_STROOPS: u32 = 100;
