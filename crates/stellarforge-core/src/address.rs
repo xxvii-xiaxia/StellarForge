@@ -54,7 +54,10 @@ mod tests {
 
     #[test]
     fn validates_account_address() {
-        assert_eq!(validate_address(VALID_ACCOUNT).unwrap(), AddressKind::Account);
+        assert_eq!(
+            validate_address(VALID_ACCOUNT).unwrap(),
+            AddressKind::Account
+        );
     }
 
     #[test]
