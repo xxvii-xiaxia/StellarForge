@@ -145,6 +145,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "stellarforge-payments"
+version = "0.1.0"
+dependencies = [
+ "stellarforge-core",
+ "stellarforge-tx",
+]
+
+[[package]]
 name = "stellarforge-tx"
 version = "0.1.0"
 dependencies = [
