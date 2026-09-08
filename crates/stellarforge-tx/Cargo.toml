@@ -1,0 +1,11 @@
+[package]
+name = "stellarforge-tx"
+description = "Transaction construction primitives for StellarForge: fees, memos, time bounds, and the transaction builder."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+stellarforge-core = { path = "../stellarforge-core" }
