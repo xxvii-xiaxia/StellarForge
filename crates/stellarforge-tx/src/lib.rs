@@ -5,8 +5,10 @@
 //! perform network I/O — submission and confirmation tracking build on top of these types.
 
 pub mod error;
+pub mod memo;
 
 pub use error::TxError;
+pub use memo::Memo;
 
 /// The network minimum base fee, in stroops, per operation.
 pub const MIN_BASE_FEE_STROOPS: u32 = 100;
