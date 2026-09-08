@@ -1,0 +1,21 @@
+/target
+**/target
+Cargo.lock.bak
+*.pdb
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+
+# Test / coverage artifacts
+*.profraw
+tarpaulin-report.html
