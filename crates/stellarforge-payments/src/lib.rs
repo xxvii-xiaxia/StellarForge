@@ -5,8 +5,10 @@
 //! transaction engine once network I/O is wired up (see `project.md` issue 007).
 
 pub mod request;
+pub mod token;
 
 pub use request::PaymentRequest;
+pub use token::{build_token_payment_transaction, TokenPaymentRequest};
 
 use stellarforge_tx::{Memo, Operation, Transaction, TransactionBuilder, TxError};
 
