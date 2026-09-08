@@ -4,12 +4,14 @@
 //! configuration, memos, time bounds, and the [`TransactionBuilder`] itself. It does not
 //! perform network I/O — submission and confirmation tracking build on top of these types.
 
+pub mod arg;
 pub mod builder;
 pub mod error;
 pub mod memo;
 pub mod operation;
 pub mod time_bounds;
 
+pub use arg::ScArg;
 pub use builder::{Transaction, TransactionBuilder};
 pub use error::TxError;
 pub use memo::Memo;
