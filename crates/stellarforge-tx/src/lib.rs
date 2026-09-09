@@ -2,12 +2,14 @@
 //!
 //! This crate provides the building blocks used to construct a Stellar transaction: fee
 //! configuration, memos, time bounds, and the [`TransactionBuilder`] itself, plus a submission
-//! pipeline ([`submit_transaction`]) for sending an already-signed transaction envelope to
-//! Horizon. StellarForge never handles private keys or signs transactions itself — see
+//! pipeline ([`submit_transaction`]) and confirmation tracking ([`wait_for_confirmation`]) for
+//! sending an already-signed transaction envelope to Horizon and following it to a final
+//! result. StellarForge never handles private keys or signs transactions itself — see
 //! `project.md` §18 — callers provide their own signing mechanism.
 
 pub mod arg;
 pub mod builder;
+pub mod confirm;
 pub mod error;
 pub mod memo;
 pub mod operation;
@@ -16,6 +18,7 @@ pub mod time_bounds;
 
 pub use arg::ScArg;
 pub use builder::{Transaction, TransactionBuilder};
+pub use confirm::{wait_for_confirmation, ConfirmationOptions};
 pub use error::TxError;
 pub use memo::Memo;
 pub use operation::Operation;
