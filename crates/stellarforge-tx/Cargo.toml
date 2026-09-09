@@ -12,6 +12,7 @@ reqwest = { version = "0.13.4", default-features = false, features = ["form", "j
 serde = { workspace = true }
 serde_json = "1.0.151"
 stellarforge-core = { path = "../stellarforge-core" }
+tokio = { version = "1.53.1", features = ["time"] }
 
 [dev-dependencies]
 tokio = { version = "1.53.1", features = ["full", "macros"] }
