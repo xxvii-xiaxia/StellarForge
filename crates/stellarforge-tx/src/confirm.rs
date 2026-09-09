@@ -114,3 +114,132 @@ struct HorizonTransactionRecord {
     ledger: i64,
     successful: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    async fn mock_config(server: &MockServer) -> NetworkConfig {
+        NetworkConfig::custom(
+            server.uri(),
+            "http://localhost:8000/soroban/rpc",
+            "Standalone Network ; February 2017",
+        )
+    }
+
+    fn fast_options() -> ConfirmationOptions {
+        ConfirmationOptions::new(Duration::from_millis(10), Duration::from_millis(200))
+    }
+
+    #[tokio::test]
+    async fn confirmation_succeeds_immediately_when_already_included() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/transactions/abc123"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "hash": "abc123",
+                "ledger": 42,
+                "successful": true
+            })))
+            .mount(&server)
+            .await;
+
+        let config = mock_config(&server).await;
+        let result = wait_for_confirmation(&config, "abc123", fast_options())
+            .await
+            .unwrap();
+
+        assert_eq!(result.hash, "abc123");
+        assert_eq!(result.ledger, 42);
+    }
+
+    #[tokio::test]
+    async fn confirmation_polls_through_not_found_until_included() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/transactions/abc123"))
+            .respond_with(ResponseTemplate::new(404))
+            .up_to_n_times(2)
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/transactions/abc123"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "hash": "abc123",
+                "ledger": 42,
+                "successful": true
+            })))
+            .mount(&server)
+            .await;
+
+        let config = mock_config(&server).await;
+        let result = wait_for_confirmation(&config, "abc123", fast_options())
+            .await
+            .unwrap();
+
+        assert_eq!(result.hash, "abc123");
+        assert_eq!(result.ledger, 42);
+    }
+
+    #[tokio::test]
+    async fn confirmation_reports_a_failed_transaction() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/transactions/abc123"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "hash": "abc123",
+                "ledger": 42,
+                "successful": false
+            })))
+            .mount(&server)
+            .await;
+
+        let config = mock_config(&server).await;
+        let err = wait_for_confirmation(&config, "abc123", fast_options())
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, TxError::ConfirmationFailed(_)));
+        assert_eq!(
+            err.to_string(),
+            "confirmation failed: transaction abc123 was included in ledger 42 but failed"
+        );
+    }
+
+    #[tokio::test]
+    async fn confirmation_times_out_if_never_included() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/transactions/abc123"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let config = mock_config(&server).await;
+        let err = wait_for_confirmation(&config, "abc123", fast_options())
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, TxError::ConfirmationFailed(_)));
+        assert!(err.to_string().contains("timed out"));
+    }
+
+    #[tokio::test]
+    async fn confirmation_fails_fast_on_unexpected_status() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/transactions/abc123"))
+            .respond_with(ResponseTemplate::new(500))
+            .mount(&server)
+            .await;
+
+        let config = mock_config(&server).await;
+        let err = wait_for_confirmation(&config, "abc123", fast_options())
+            .await
+            .unwrap_err();
+
+        assert!(err.to_string().contains("unexpected status 500"));
+    }
+}
